@@ -1,11 +1,13 @@
 import joblib
-from cometml import start
+from comet_ml import start
 import numpy as np
+import sys
+
 import os
 from tensorflow.keras.callbacks import ModelCheckpoint,LearningRateScheduler,TensorBoard,EarlyStopping
 from src.logger import logging
-from src.exception import CustomException
-from src.base_model import BaseModel
+from src.exception.exception import CustomException
+from src.recommendation_workflow.base_model import BaseModel
 from config.paths_config import *
 
 
@@ -14,10 +16,11 @@ class ModelTraining:
         self.data_path= data_path
 
         self.experiment = start(
-            api_key="huuWS7JIs9iEZU9mBtL9Qyy8x",
+            api_key="zUUrFK64SeDAeKIy7jAVljLHG",
             project_name="Anime_Recommender",
-            workspace="shivam-ghuge"
+            workspace="shivam004"
         )
+        
         logging.info("Model Training & COMET ML initialized..")
     
     def load_data(self):
@@ -30,7 +33,7 @@ class ModelTraining:
             logging.info("Data loaded sucesfully for Model Trainig")
             return X_train_array,X_test_array,y_train,y_test
         except Exception as e:
-            raise CustomException("Failed to load data",e)
+            raise CustomException(e,sys)
         
     def train_model(self):
         try:
@@ -86,14 +89,14 @@ class ModelTraining:
                 model.load_weights(CHECKPOINT_FILE_PATH)
                 logging.info("Model training Completedd.....") 
 
-                for epoch in len(history.history['loss']):
-                    train_loss = history.history['train_loss'][epoch]
+                for epoch in range(len(history.history['loss'])):
+                    train_loss = history.history['loss'][epoch]
                     val_loss = history.history['val_loss'][epoch]
 
-                    train_mae = history.history['train_mae'][epoch]
+                    train_mae = history.history['mae'][epoch]
                     val_mae = history.history['val_mae'][epoch]
                     
-                    train_mse = history.history['train_mse'][epoch]
+                    train_mse = history.history['mse'][epoch]
                     val_mse = history.history['val_mse'][epoch]
 
                     # loss
@@ -110,13 +113,13 @@ class ModelTraining:
 
             
             except Exception as e:
-                raise CustomException("Model training failedd.....")
+                raise CustomException(e,sys)
             
             self.save_model_weights(model)
 
         except Exception as e:
             logging.error(str(e))
-            raise CustomException("Errorduring Model Trainig Process",e)
+            raise CustomException(e,sys)
         
     def extract_weights(self,layer_name,model):
         try:
@@ -127,7 +130,7 @@ class ModelTraining:
             return weights
         except Exception as e:
             logging.error(str(e))
-            raise CustomException("Errorduring Weight Extraction Process",e)
+            raise CustomException(e,sys)
     
     def save_model_weights(self,model):
         try:
@@ -147,4 +150,4 @@ class ModelTraining:
             logging.info("User and Anime weights saved sucesfully....")
         except Exception as e:
             logging.error(str(e))
-            raise CustomException("Error during saving model and weights Process",e)
+            raise CustomException(e,sys)

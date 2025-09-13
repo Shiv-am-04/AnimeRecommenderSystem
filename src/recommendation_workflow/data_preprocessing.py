@@ -3,9 +3,10 @@ import pandas as pd
 import numpy as np
 import joblib
 from src.logger import logging
-from src.exception import CustomException
+from src.exception.exception import CustomException
 from config.paths_config import *
 import sys
+import comet_ml
 from sklearn.model_selection import train_test_split
 
 
@@ -50,7 +51,7 @@ class DataProcessor:
             max_rating =max(self.rating_df["rating"])
 
             epsilon = 1e-6
-            self.rating_df["rating"] = self.rating_df["rating"].apply(lambda x: lambda x: ((x - min_rating) + epsilon) / ((max_rating - min_rating) + epsilon)).values.astype(np.float64)
+            self.rating_df["rating"] = self.rating_df["rating"].apply(lambda x: ((x - min_rating) + epsilon) / ((max_rating - min_rating) + epsilon)).values.astype(np.float64)
             logging.info("Scalind done for Processing ")
         except Exception as e:
             raise CustomException(e,sys)

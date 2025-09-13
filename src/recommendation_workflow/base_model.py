@@ -2,7 +2,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input,Embedding,Dot,Flatten,Dense,Activation,BatchNormalization
 from utils.common_functions import read_yaml
 from src.logger import logging
-from src.exception import CustomException
+from src.exception.exception import CustomException
 
 
 class BaseModel:

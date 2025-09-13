@@ -12,3 +12,7 @@ joblib
 kagglehub
 scikit-learn
 matplotlib
+utils
+python-dotenv
+boto3
+botocore
