@@ -7,6 +7,7 @@ tensorflow
 comet-ml
 dvc
 dvc-gs
+dvc-s3
 flask
 joblib
 kagglehub
