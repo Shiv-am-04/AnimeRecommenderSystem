@@ -17,3 +17,5 @@ utils
 python-dotenv
 boto3
 botocore
+SQLAlchemy
+psycopg2-binary

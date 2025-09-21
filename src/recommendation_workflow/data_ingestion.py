@@ -135,4 +135,4 @@ class DataIngestion:
 
 if __name__ == "__main__":
     ingestion = DataIngestion(read_yaml(CONFIG_PATH))
-    ingestion.run()
+    ingestion.upload_to_s3()
