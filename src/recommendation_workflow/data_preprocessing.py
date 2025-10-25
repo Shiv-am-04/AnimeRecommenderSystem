@@ -6,8 +6,10 @@ from src.logger import logging
 from src.exception.exception import CustomException
 from config.paths_config import *
 import sys
-import comet_ml
+
 from sklearn.model_selection import train_test_split
+
+from utils.common_functions import establish_connection
 
 
 class DataProcessor:
@@ -32,7 +34,11 @@ class DataProcessor:
     
     def load_data(self,usecols):
         try:
-            self.rating_df = pd.read_csv(self.input_file , low_memory=True,usecols=usecols)
+            engine = establish_connection()
+            query = f"SELECT {', '.join(usecols)} FROM animelist;"
+
+            self.rating_df = pd.read_sql(query,con=engine)
+            
             logging.info("Data loaded sucesfully for Data Processing")
         except Exception as e:
             raise CustomException(e,sys)

@@ -122,6 +122,8 @@ class DataIngestion:
             logging.error("Error while downloading data from GCP")
             raise CustomException("Failed to download data",e)
         
+    
+        
     def run(self):
         try:
             logging.info("Starting Data Ingestion Process....")

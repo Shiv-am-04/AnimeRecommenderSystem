@@ -14,6 +14,7 @@ pipeline{
                 }
             }
         }
+
         stage('Creating Virtual Environment and Installing Dependencies'){
             steps{
                 script{
@@ -23,6 +24,18 @@ pipeline{
                         . ${VENV_DIR}/bin/activate
                         pip install --upgrade pip
                         pip install -e .
+                    '''
+                }
+            }
+        }
+        
+        stage('DVC Pull'){
+            steps{
+                withCredentials([file(credentialsId:'gcp-key',variable:'GOOGLE_APPLICATION_CREDENTIALS')]){
+                    echo 'DVC Pull...',
+                    sh '''
+                    . ${VENV_DIR}/bin/activate
+                    dvc pull
                     '''
                 }
             }
