@@ -4,12 +4,14 @@ from google.cloud import storage
 from src.logger import logging
 from src.exception.exception import CustomException
 from config.paths_config import *
-
-from utils.common_functions import read_yaml
-
 from dotenv import load_dotenv
 import os
 import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from utils.common_functions import read_yaml
+
+
 
 load_dotenv()
 

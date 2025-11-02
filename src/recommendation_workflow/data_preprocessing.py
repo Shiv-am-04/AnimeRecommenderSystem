@@ -9,6 +9,7 @@ import sys
 
 from sklearn.model_selection import train_test_split
 
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from utils.common_functions import establish_connection
 
 

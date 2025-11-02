@@ -21,11 +21,14 @@ WORKDIR /app
 # Copy the application code
 COPY . .
 
-# Install dependencies from requirements.txt
-RUN pip install --no-cache-dir -e .
+# Install dependencies from requirements.txt first
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install the package in editable mode (without utils dependency)
+RUN pip install --no-cache-dir -e . --no-deps
 
 # Train the model before running the application
-RUN python pipeline/training_pipeline.py
+# RUN python pipeline/training_pipeline.py
 
 # Expose the port that Flask will run on
 EXPOSE 5000

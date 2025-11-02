@@ -15,19 +15,19 @@ pipeline{
             }
         }
 
-        // stage('Creating Virtual Environment and Installing Dependencies'){
-        //     steps{
-        //         script{
-        //             echo 'setting up our venv and installing dependencies'
-        //             sh '''
-        //                 python -m venv ${VENV_DIR}
-        //                 . ${VENV_DIR}/bin/activate
-        //                 pip install --upgrade pip
-        //                 pip install -e .
-        //             '''
-        //         }
-        //     }
-        // }
+        stage('Creating Virtual Environment and Installing Dependencies'){
+            steps{
+                script{
+                    echo 'setting up our venv and installing dependencies'
+                    sh '''
+                        python -m venv ${VENV_DIR}
+                        . ${VENV_DIR}/bin/activate
+                        pip install --upgrade pip
+                        pip install -e .
+                    '''
+                }
+            }
+        }
         
         // stage('DVC Pull'){
         //     steps{
