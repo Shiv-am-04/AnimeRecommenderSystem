@@ -3,6 +3,8 @@ pipeline{
 
     environment{
         VENV_DIR = '.venv'
+        DOCKER_IMAGE = 'anime-recommender:latest'
+        KIND_CLUSTER = 'anime-recommender'
     }
 
     stages{
@@ -28,17 +30,73 @@ pipeline{
                 }
             }
         }
-        
-        // stage('DVC Pull'){
-        //     steps{
-        //         withCredentials([file(credentialsId:'gcp-key',variable:'GOOGLE_APPLICATION_CREDENTIALS')]){
-        //             echo 'DVC Pull...',
-        //             sh '''
-        //             . ${VENV_DIR}/bin/activate
-        //             dvc pull
-        //             '''
-        //         }
-        //     }
-        // }
+
+        stage('Load Docker Image to Kind'){
+            steps{
+                script{
+                    echo 'Loading Docker image to Kind cluster'
+                    sh '''
+                        # Create Kind cluster if it doesn't exist
+                        if ! kind get clusters | grep -q ${KIND_CLUSTER}; then
+                            kind create cluster --name ${KIND_CLUSTER}
+                        fi
+                        
+                        # Load Docker image to Kind
+                        kind load docker-image ${DOCKER_IMAGE} --name ${KIND_CLUSTER}
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Kind'){
+            steps{
+                script{
+                    echo 'Deploying application to Kind cluster'
+                    sh '''
+                        # Set kubectl context to Kind cluster
+                        kubectl cluster-info --context kind-${KIND_CLUSTER}
+                        
+                        # Apply Kubernetes manifests
+                        kubectl apply -f k8s/namespace.yaml
+                        kubectl apply -f k8s/deployment.yaml -n anime-recommender
+                        
+                        # Wait for deployment to be ready
+                        kubectl wait --for=condition=available --timeout=300s deployment/anime-recommender -n anime-recommender
+                        
+                        # Get service info
+                        kubectl get services -n anime-recommender
+                    '''
+                }
+            }
+        }
+
+        stage('Verify Deployment'){
+            steps{
+                script{
+                    echo 'Verifying deployment status'
+                    sh '''
+                        kubectl get pods -n anime-recommender
+                        kubectl get services -n anime-recommender
+                        
+                        # Port forward for local access (optional)
+                        echo "To access the application locally, run:"
+                        echo "kubectl port-forward service/anime-recommender-service 8080:80 -n anime-recommender"
+                    '''
+                }
+            }
+        }
+
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed'
+        }
+        success {
+            echo 'Deployment successful! Application is running on Kind cluster.'
+        }
+        failure {
+            echo 'Deployment failed. Check logs for details.'
+        }
     }
 }
