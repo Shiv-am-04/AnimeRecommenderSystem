@@ -31,6 +31,29 @@ pipeline{
             }
         }
 
+        stage('DVC Pull') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
+                    script {
+                        echo 'DVC Pull from S3...'
+                        sh """
+                            . ${VENV_DIR}/bin/activate
+
+                            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+                            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+                            export AWS_DEFAULT_REGION=ap-south-1 
+
+                            dvc pull
+                        """
+                    }
+                }
+            }
+        }
+
+
         stage('Load Docker Image to Kind'){
             steps{
                 script{
@@ -85,7 +108,6 @@ pipeline{
                 }
             }
         }
-
     }
 
     post {
