@@ -12,7 +12,7 @@ pipeline{
             steps{
                 script{
                     echo 'cloning github repo to jenkins'
-                    checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github_token', url: 'https://github.com/Shiv-am-04/AnimeRecommenderSystem.git']])
+                    checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'GITHUB_TOKEN', url: 'https://github.com/Shiv-am-04/AnimeRecommenderSystem.git']])
                 }
             }
         }
