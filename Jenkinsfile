@@ -3,8 +3,8 @@ pipeline{
 
     environment{
         VENV_DIR = '.venv'
-        DOCKER_IMAGE = 'anime-recommender:latest'
-        KIND_CLUSTER = 'anime-recommender'
+        DOCKER_IMAGE = 'anime-recommender:0.1'
+        KIND_CLUSTER = 'anime-recommender-cluster'
     }
 
     stages{
@@ -12,7 +12,7 @@ pipeline{
             steps{
                 script{
                     echo 'cloning github repo to jenkins'
-                    checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: '099aaacb-02d7-4ecb-a541-6e451fe2d953', url: 'https://github.com/Shiv-am-04/AnimeRecommenderSystem.git']])
+                    checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github_token', url: 'https://github.com/Shiv-am-04/AnimeRecommenderSystem.git']])
                 }
             }
         }
@@ -53,15 +53,14 @@ pipeline{
             }
         }
 
-
         stage('Load Docker Image to Kind'){
             steps{
                 script{
-                    echo 'Loading Docker image to Kind cluster'
+                    echo 'Creating Kind cluster and loading Docker image'
                     sh '''
-                        # Create Kind cluster if it doesn't exist
+                        # Create Kind cluster with config if it doesn't exist
                         if ! kind get clusters | grep -q ${KIND_CLUSTER}; then
-                            kind create cluster --name ${KIND_CLUSTER}
+                            kind create cluster --config=kind/kind-config.yaml --name ${KIND_CLUSTER}
                         fi
                         
                         # Load Docker image to Kind

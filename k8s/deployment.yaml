@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: anime-recommender
-        image: your-docker-image:latest
+        image: anime-recommender:0.1
         ports:
         - containerPort: 5000
         env:
@@ -50,7 +50,7 @@ metadata:
   name: app-service
 spec:
   selector:
-      app: my-app
+      app: anime-recommender
   ports:
       - name: metrics
         port: 8000
