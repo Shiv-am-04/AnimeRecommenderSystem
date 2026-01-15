@@ -3,8 +3,24 @@ pipeline{
 
     environment{
         VENV_DIR = '.venv'
-        DOCKER_IMAGE = 'anime-recommender:0.1'
+        DOCKER_IMAGE = 'anime-recommender'
         KIND_CLUSTER = 'anime-recommender-cluster'
+        NAMESPACE = 'anime-recommender'
+        BUILD_VERSION = "v1"
+        PREVIOUS_VERSION = ""
+    }
+
+    parameters {
+        choice(
+            name: 'ACTION',
+            choices: ['deploy', 'rollback'],
+            description: 'Choose action: deploy new version or rollback to previous'
+        )
+        string(
+            name: 'ROLLBACK_VERSION',
+            defaultValue: '',
+            description: 'Version to rollback to (only for rollback action)'
+        )
     }
 
     stages{
@@ -45,7 +61,7 @@ pipeline{
                             export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
                             export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
                             export AWS_DEFAULT_REGION=ap-south-1 
-
+                            git checkout model-v1
                             dvc pull
                         """
                     }
@@ -53,41 +69,100 @@ pipeline{
             }
         }
 
+        stage('Build and Tag Docker Image'){
+            when {
+                expression { params.ACTION == 'deploy' }
+            }
+            steps{
+                script{
+                    echo "Building Docker image with version ${BUILD_VERSION}"
+                    sh """
+                        docker build -t ${DOCKER_IMAGE}:${BUILD_VERSION} .
+                        docker tag ${DOCKER_IMAGE}:${BUILD_VERSION} ${DOCKER_IMAGE}:latest
+                    """
+                }
+            }
+        }
+
         stage('Load Docker Image to Kind'){
+            when {
+                expression { params.ACTION == 'deploy' }
+            }
             steps{
                 script{
                     echo 'Creating Kind cluster and loading Docker image'
-                    sh '''
+                    sh """
                         # Create Kind cluster with config if it doesn't exist
                         if ! kind get clusters | grep -q ${KIND_CLUSTER}; then
                             kind create cluster --config=kind/kind-config.yaml --name ${KIND_CLUSTER}
                         fi
                         
                         # Load Docker image to Kind
-                        kind load docker-image ${DOCKER_IMAGE} --name ${KIND_CLUSTER}
-                    '''
+                        kind load docker-image ${DOCKER_IMAGE}:${BUILD_VERSION} --name ${KIND_CLUSTER}
+                        kind load docker-image ${DOCKER_IMAGE}:latest --name ${KIND_CLUSTER}
+                    """
                 }
             }
         }
 
         stage('Deploy to Kind'){
+            when {
+                expression { params.ACTION == 'deploy' }
+            }
             steps{
                 script{
-                    echo 'Deploying application to Kind cluster'
-                    sh '''
+                    echo "Deploying version ${BUILD_VERSION} to Kind cluster"
+                    sh """
                         # Set kubectl context to Kind cluster
                         kubectl cluster-info --context kind-${KIND_CLUSTER}
                         
+                        # Store current version for potential rollback
+                        CURRENT_VERSION=\$(kubectl get deployment anime-recommender -n ${NAMESPACE} -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null | cut -d':' -f2 || echo "none")
+                        echo "Current version: \$CURRENT_VERSION" > previous_version.txt
+                        
                         # Apply Kubernetes manifests
                         kubectl apply -f k8s/namespace.yaml
-                        kubectl apply -f k8s/deployment.yaml -n anime-recommender
                         
-                        # Wait for deployment to be ready
-                        kubectl wait --for=condition=available --timeout=300s deployment/anime-recommender -n anime-recommender
+                        # Update deployment with new image
+                        sed "s|image: anime-recommender:0.1|image: ${DOCKER_IMAGE}:${BUILD_VERSION}|g" k8s/deployment.yaml | kubectl apply -f - -n ${NAMESPACE}
                         
-                        # Get service info
-                        kubectl get services -n anime-recommender
-                    '''
+                        # Wait for rollout to complete
+                        kubectl rollout status deployment/anime-recommender -n ${NAMESPACE} --timeout=300s
+                        
+                        # Verify deployment health
+                        kubectl wait --for=condition=available --timeout=60s deployment/anime-recommender -n ${NAMESPACE}
+                    """
+                }
+            }
+        }
+
+        stage('Rollback'){
+            when {
+                expression { params.ACTION == 'rollback' }
+            }
+            steps{
+                script{
+                    def rollbackVersion = params.ROLLBACK_VERSION ?: 'previous'
+                    echo "Rolling back to version: ${rollbackVersion}"
+                    
+                    sh """
+                        # Set kubectl context
+                        kubectl cluster-info --context kind-${KIND_CLUSTER}
+                        
+                        if [ "${rollbackVersion}" = "previous" ]; then
+                            # Rollback to previous revision
+                            kubectl rollout undo deployment/anime-recommender -n ${NAMESPACE}
+                        else
+                            # Rollback to specific version
+                            kubectl set image deployment/anime-recommender anime-recommender=${DOCKER_IMAGE}:${rollbackVersion} -n ${NAMESPACE}
+                        fi
+                        
+                        # Wait for rollback to complete
+                        kubectl rollout status deployment/anime-recommender -n ${NAMESPACE} --timeout=300s
+                        
+                        # Verify rollback health
+                        kubectl wait --for=condition=available --timeout=60s deployment/anime-recommender -n ${NAMESPACE}
+                    """
                 }
             }
         }
@@ -96,14 +171,18 @@ pipeline{
             steps{
                 script{
                     echo 'Verifying deployment status'
-                    sh '''
-                        kubectl get pods -n anime-recommender
-                        kubectl get services -n anime-recommender
+                    sh """
+                        kubectl get pods -n ${NAMESPACE}
+                        kubectl get services -n ${NAMESPACE}
                         
-                        # Port forward for local access (optional)
+                        # Health check
+                        echo "Performing health checks..."
+                        kubectl get pods -n ${NAMESPACE} -l app=anime-recommender -o jsonpath='{.items[*].status.phase}' | grep -q Running
+                        
+                        echo "Deployment verification completed successfully"
                         echo "To access the application locally, run:"
-                        echo "kubectl port-forward service/anime-recommender-service 8080:80 -n anime-recommender"
-                    '''
+                        echo "kubectl port-forward service/anime-recommender-service 8080:80 -n ${NAMESPACE}"
+                    """
                 }
             }
         }

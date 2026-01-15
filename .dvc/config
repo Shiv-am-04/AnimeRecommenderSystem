@@ -1,4 +1,0 @@
-[core]
-    remote = artifact_remote
-['remote "artifact_remote"']
-    url = s3://dvc-bucket-0/

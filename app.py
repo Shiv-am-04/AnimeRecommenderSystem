@@ -1,9 +1,10 @@
-from flask import Flask,render_template,request
+from flask import Flask,render_template,request,jsonify
 from pipeline.prediction_pipeline import hybrid_recommendation
 from prometheus_flask_exporter import PrometheusMetrics
 from prometheus_client import Counter, Histogram
 import time
 from prometheus_client import start_http_server
+import os
 
 
 app = Flask(__name__)
@@ -16,6 +17,21 @@ metrics.info('app_info', 'Application info', version='1.0.0')
 recommendation_requests = Counter('recommendation_requests_total', 'Total recommendation requests')
 recommendation_errors = Counter('recommendation_errors_total', 'Total recommendation errors')
 recommendation_duration = Histogram('recommendation_duration_seconds', 'Time spent generating recommendations')
+
+
+# Health check endpoints
+@app.route('/health')
+def health_check():
+    return jsonify({"status": "healthy", "version": os.getenv('APP_VERSION', '1.0.0')}), 200
+
+@app.route('/ready')
+def readiness_check():
+    try:
+        # Add any readiness checks here (DB connection, model loading, etc.)
+        return jsonify({"status": "ready"}), 200
+    except Exception as e:
+        return jsonify({"status": "not ready", "error": str(e)}), 503
+
 
 @app.route('/' , methods=['GET','POST'])
 def home():
