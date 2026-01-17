@@ -4,10 +4,11 @@ recommendation_system_explanation.md
 
 # artifacts
 artifacts/raw/
-artifacts/model/
-artifacts/model_checkpoint/
+artifacts/model/model.h5
+artifacts/model_checkpoint/weights.weights.h5
 artifacts/processed/
-artifacts/weights/
+artifacts/weights/anime_weights.pkl
+artifacts/weights/user_weights.pkl
 
 
 # Byte-compiled / optimized / DLL files
