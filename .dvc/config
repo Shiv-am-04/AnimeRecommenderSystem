@@ -1,0 +1,4 @@
+[core]
+    remote = model_artifact_remote
+['remote "model_artifact_remote"']
+    url = s3://dvc-bucket-0/
