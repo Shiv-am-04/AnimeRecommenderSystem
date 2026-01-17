@@ -1,0 +1,5 @@
+outs:
+- md5: d0efa0790d8e945c045cefa1f3c1bc2f
+  size: 8780529
+  hash: md5
+  path: anime_weights.pkl

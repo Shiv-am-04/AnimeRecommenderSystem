@@ -1,0 +1,5 @@
+outs:
+- md5: dafd1731fe280f08530104457a1a07b4
+  size: 2152177
+  hash: md5
+  path: user_weights.pkl
